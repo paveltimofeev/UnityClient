@@ -45,7 +45,7 @@ namespace UnityClient
         private string bodyHash;
         private string hash;
 
-
+        
         public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
         {
             ThrowIfNull(APPID , "APPID");
@@ -71,6 +71,35 @@ namespace UnityClient
             ThrowIfNull(name, "name");
             svcname = name;
         }
+
+        public void AddUrl(string url)
+        {
+            ThrowIfNull(url, "url");
+
+            if (url.Contains("://"))
+                throw new ArgumentException("url argument should not contains protocol part", url);
+
+            if (url.Contains("."))
+                throw new ArgumentException("url argument should not contains domain part", url);
+
+            var pieces = url.Split('?');
+
+            if (pieces.Length > 2)
+                throw new ArgumentException("url argument cannot have more than one query part", url);
+
+            uri = pieces[0];
+            query = pieces.Length > 0 ? pieces[1] : "";
+        }
+
+        public string canonicalUri
+        {
+            get
+            {
+                ThrowIfNull(uri, "uri");
+                return uri.ToLowerInvariant().Trim();
+            }
+        }
+
 
         public string CreateSignature()
         {

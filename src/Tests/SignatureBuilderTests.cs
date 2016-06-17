@@ -113,7 +113,80 @@ namespace Tests
                 SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
                 builder.AddService(null);
             });
+
+            ExpectedException<ArgumentNullException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                builder.AddService("");
+            });
         }
+
+
+        [TestMethod]
+        public void NullOrEmptyUrlIsNotAllowed()
+        {
+            ExpectedException<ArgumentNullException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                builder.AddUrl(null);
+            });
+
+            ExpectedException<ArgumentNullException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                builder.AddUrl("");
+            });
+        }
+
+        [TestMethod]
+        public void UrlsWithProtocolOrDomainIsNotAllowed()
+        {
+            ExpectedException<ArgumentException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                builder.AddUrl("http://url");
+            });
+
+            ExpectedException<ArgumentException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                builder.AddUrl("url.com");
+            });
+
+        }
+
+        [TestMethod]
+        public void UrlsCannotContainsMoreThenOneQuery()
+        {
+            ExpectedException<ArgumentException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                builder.AddUrl("/v1/path?query?query");
+            });
+        }
+
+        [TestMethod]
+        public void AddUrlShouldCreateCanonicalUri()
+        {
+            string URL = " /V1/Path  ?query=val&param2=val2";
+            string CanonicalURI = "/v1/path";
+
+            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            builder.AddUrl(URL);
+
+            Assert.AreEqual(builder.canonicalUri, CanonicalURI);
+        }
+
+        [TestMethod]
+        public void ReadCanonicalUriWithoutSettingUrlShouldThrowException()
+        {
+            ExpectedException<ArgumentNullException>(() =>
+            {
+                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                string temp = builder.canonicalUri;
+            });
+        }
+
 
 
         void ExpectedException<T>(Action action)

@@ -5,6 +5,7 @@
 /[Bb]uilds/
 /Assets/AssetStoreTools*
 /packages/
+/TestResults/
 /Tests/ScoreboardService.Tests/bin/
 /Tests/ScoreboardService.Tests/obj/
 

@@ -16,6 +16,8 @@ public class RestBehaviour : MonoBehaviour
     public string _baseUri;
     public string _appId;
     public string _apiKey;
+    public string _apiSecret;
+
     RestClient restClient = new RestClient();
     HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
 
@@ -294,4 +296,62 @@ public class Score : IScore
     public int rank { get; private set; }
     public string userID { get; private set; }
     public DateTime date { get; private set; }
+}
+
+namespace UnityClient
+{
+
+    public class SignatureBuilder
+    {
+        private const string Algorithm = "PGS1";
+        private readonly string APPID = string.Empty;
+        private readonly string APIKEY = string.Empty;
+        private readonly string APISECRET = string.Empty;
+
+        private const string HeaderFormat = "{0} Credentials={1} SignedHeaders={2} Signature={3}";
+        private const string CredentialsFormat = "{0}/{1}/{2}";
+
+        private string SignedHeaders;
+        private string Signature;
+        
+        private string svcname;
+        private string uri;
+        private string query;
+        private string headers;
+        private string body;
+        private string bodyHash;
+        private string hash;
+
+
+        public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
+        {
+            if (APPID == null || APPID == "") throw new ArgumentNullException("APPID");
+            if (APIKEY == null || APIKEY == "") throw new ArgumentNullException("APIKEY");
+            if (APISECRET == null || APISECRET == "") throw new ArgumentNullException("APISECRET");
+
+            this.APPID = APPID;
+            this.APIKEY = APIKEY;
+            this.APISECRET = APISECRET;
+        }
+
+        public void AddHeader(string name, string value)
+        {
+            if (name == null || name == "") throw new ArgumentNullException("name");
+            if (value == null || value == "") throw new ArgumentNullException("APPID");
+            
+            SignedHeaders += string.Format("{0};", name);
+        }
+
+        public void AddService(string name)
+        {
+            if (name == null || name == "") throw new ArgumentNullException("name");
+            svcname = name;
+        }
+
+        public string CreateSignature()
+        {
+            string Credentials = string.Format(CredentialsFormat, APIKEY, "YYYYMMDD", svcname);
+            return string.Format(HeaderFormat, Algorithm, Credentials, SignedHeaders, Signature);
+        }
+    }
 }

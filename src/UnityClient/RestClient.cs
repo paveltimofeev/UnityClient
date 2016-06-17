@@ -16,6 +16,8 @@ public class RestBehaviour : MonoBehaviour
     public string _baseUri;
     public string _appId;
     public string _apiKey;
+    public string _apiSecret;
+
     RestClient restClient = new RestClient();
     HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
 

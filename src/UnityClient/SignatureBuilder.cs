@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UnityClient
 {
@@ -34,13 +35,13 @@ namespace UnityClient
         private const string HeaderFormat = "{0} Credentials={1} SignedHeaders={2} Signature={3}";
         private const string CredentialsFormat = "{0}/{1}/{2}";
 
-        private string SignedHeaders;
         private string Signature;
         
         private string svcname;
         private string uri;
         private string query;
         private string headers;
+        private string list_headers;
         private string body;
         private string bodyHash;
         private string hash;
@@ -61,9 +62,10 @@ namespace UnityClient
         {
             ThrowIfNull(name , "name");
             ThrowIfNull(value , "value");
-            
-            SignedHeaders += string.Format("{0};", name);
+
+            list_headers += string.Format("{0};", name);
             // TODO: value
+            headers += Regex.Replace(value.ToLowerInvariant().Trim(), @"\s+", " ");
         }
 
         public void AddService(string name)
@@ -95,8 +97,33 @@ namespace UnityClient
         {
             get
             {
-                ThrowIfNull(uri, "uri");
+                ThrowIfNull(uri, "uri"); // TODO: really need?
                 return uri.ToLowerInvariant().Trim();
+            }
+        }
+
+        public string canonicalQuery
+        {
+            get
+            {
+                if (query == null) // TODO: really need?
+                    throw new ArgumentNullException("query");
+
+                // TODO: uri-encode spaces and so on
+                string[] queryParam = query.Split('&');
+                Array.Sort<string>(queryParam);
+                return string.Join("&", queryParam);
+            }
+        }
+
+        public string signedHeaders
+        {
+            get
+            {
+                if (list_headers != null)
+                    return list_headers.TrimEnd(new char[] { ';' });
+                else
+                    return ""; // TODO: really need?
             }
         }
 
@@ -104,7 +131,7 @@ namespace UnityClient
         public string CreateSignature()
         {
             string Credentials = string.Format(CredentialsFormat, APIKEY, "YYYYMMDD", svcname);
-            return string.Format(HeaderFormat, Algorithm, Credentials, SignedHeaders, Signature);
+            return string.Format(HeaderFormat, Algorithm, Credentials, signedHeaders, Signature);
         }
 
 

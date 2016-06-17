@@ -56,6 +56,20 @@ namespace Tests
         }
 
         [TestMethod]
+        public void AddedHeaderNamesShouldBeJoinedToSignedHeadersWithoutTailingSemicolon()
+        {
+            string HEADER1 = "X-DATA";
+            string HEADER2 = "X-DEBUG";
+            string HEADERVALUE = "VALUE";
+
+            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            builder.AddHeader(HEADER1, HEADERVALUE);
+            builder.AddHeader(HEADER2, HEADERVALUE);
+
+            Assert.AreEqual(builder.signedHeaders, HEADER1 + ";" + HEADER2);
+        }
+
+        [TestMethod]
         public void NullOrEmptyHeadersAreNotAllowed()
         {
             string HEADER = "X-DATA";
@@ -185,6 +199,18 @@ namespace Tests
                 SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
                 string temp = builder.canonicalUri;
             });
+        }
+
+        [TestMethod]
+        public void AddUrlShouldCreateCanonicalQuery()
+        {
+            string URL = " /V1/Path  ?b=val&a=val2";
+            string CanonicalQuery = "a=val2&b=val";
+
+            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            builder.AddUrl(URL);
+
+            Assert.AreEqual(builder.canonicalQuery, CanonicalQuery);
         }
 
 

@@ -5,6 +5,7 @@ using rest;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Text;
 using System;
 using UnityEngine.Experimental.Networking;
@@ -311,23 +312,23 @@ namespace UnityClient
         private const string HeaderFormat = "{0} Credentials={1} SignedHeaders={2} Signature={3}";
         private const string CredentialsFormat = "{0}/{1}/{2}";
 
-        private string SignedHeaders;
         private string Signature;
         
         private string svcname;
         private string uri;
         private string query;
         private string headers;
+        private string list_headers;
         private string body;
         private string bodyHash;
         private string hash;
 
-
+        
         public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
         {
-            if (APPID == null || APPID == "") throw new ArgumentNullException("APPID");
-            if (APIKEY == null || APIKEY == "") throw new ArgumentNullException("APIKEY");
-            if (APISECRET == null || APISECRET == "") throw new ArgumentNullException("APISECRET");
+            ThrowIfNull(APPID , "APPID");
+            ThrowIfNull(APIKEY , "APIKEY");
+            ThrowIfNull(APISECRET, "APISECRET");
 
             this.APPID = APPID;
             this.APIKEY = APIKEY;
@@ -336,22 +337,83 @@ namespace UnityClient
 
         public void AddHeader(string name, string value)
         {
-            if (name == null || name == "") throw new ArgumentNullException("name");
-            if (value == null || value == "") throw new ArgumentNullException("APPID");
-            
-            SignedHeaders += string.Format("{0};", name);
+            ThrowIfNull(name , "name");
+            ThrowIfNull(value , "value");
+
+            list_headers += string.Format("{0};", name);
+            headers += Regex.Replace(value.ToLowerInvariant().Trim(), @"\s+", " ");
         }
 
         public void AddService(string name)
         {
-            if (name == null || name == "") throw new ArgumentNullException("name");
+            ThrowIfNull(name, "name");
             svcname = name;
         }
+
+        public void AddUrl(string url)
+        {
+            ThrowIfNull(url, "url");
+
+            if (url.Contains("://"))
+                throw new ArgumentException("url argument should not contains protocol part", url);
+
+            if (url.Contains("."))
+                throw new ArgumentException("url argument should not contains domain part", url);
+
+            var pieces = url.Split('?');
+
+            if (pieces.Length > 2)
+                throw new ArgumentException("url argument cannot have more than one query part", url);
+
+            uri = pieces[0];
+            query = pieces.Length > 0 ? pieces[1] : "";
+        }
+
+        public string canonicalUri
+        {
+            get
+            {
+                ThrowIfNull(uri, "uri"); // TODO: really need?
+                return uri.ToLowerInvariant().Trim();
+            }
+        }
+
+        public string canonicalQuery
+        {
+            get
+            {
+                if (query == null) // TODO: really need?
+                    throw new ArgumentNullException("query");
+
+                string[] queryParam = query.Split('&');
+                Array.Sort<string>(queryParam);
+                return string.Join("&", queryParam);
+            }
+        }
+
+        public string signedHeaders
+        {
+            get
+            {
+                if (list_headers != null)
+                    return list_headers.TrimEnd(new char[] { ';' });
+                else
+                    return ""; // TODO: really need?
+            }
+        }
+
 
         public string CreateSignature()
         {
             string Credentials = string.Format(CredentialsFormat, APIKEY, "YYYYMMDD", svcname);
-            return string.Format(HeaderFormat, Algorithm, Credentials, SignedHeaders, Signature);
+            return string.Format(HeaderFormat, Algorithm, Credentials, signedHeaders, Signature);
+        }
+
+
+        private void ThrowIfNull(string value, string argName)
+        {
+            if (value == null || value == string.Empty || value == "")
+                throw new ArgumentNullException(argName);
         }
     }
 }

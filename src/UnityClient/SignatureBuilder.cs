@@ -40,7 +40,7 @@ namespace UnityClient
         private string svcname;
         private string uri;
         private string query;
-        private string headers;
+        private Dictionary<string, string> headers = new Dictionary<string,string>();
         private string list_headers;
         private string body;
         private string bodyHash;
@@ -62,10 +62,10 @@ namespace UnityClient
         {
             ThrowIfNull(name , "name");
             ThrowIfNull(value , "value");
-
+            
+            // TODO: Case-sensitive, sorted?
             list_headers += string.Format("{0};", name);
-            // TODO: value
-            headers += Regex.Replace(value.ToLowerInvariant().Trim(), @"\s+", " ");
+            headers.Add(name, Regex.Replace(value.ToLowerInvariant().Trim(), @"\s+", " "));
         }
 
         public void AddService(string name)
@@ -113,6 +113,16 @@ namespace UnityClient
                 string[] queryParam = query.Split('&');
                 Array.Sort<string>(queryParam);
                 return string.Join("&", queryParam);
+            }
+        }
+
+        public string canonicalHeaders
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                headers.Any(x => sb.AppendFormat("{0}: {1}\n", x.Key, x.Value) == null);
+                return sb.ToString();
             }
         }
 

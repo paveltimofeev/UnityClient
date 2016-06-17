@@ -213,6 +213,16 @@ namespace Tests
             Assert.AreEqual(builder.canonicalQuery, CanonicalQuery);
         }
 
+        [TestMethod]
+        public void AddHeaderShouldCreateCanonicalHeaders()
+        {
+            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            builder.AddHeader("HOST", "1");
+            builder.AddHeader("range", "2");
+            builder.AddHeader("X-Date", "3");
+
+            Assert.AreEqual(builder.canonicalHeaders, "HOST: 1\nrange: 2\nX-Date: 3\n");
+        }
 
 
         void ExpectedException<T>(Action action)

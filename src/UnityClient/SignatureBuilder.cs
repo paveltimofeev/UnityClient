@@ -48,9 +48,9 @@ namespace UnityClient
 
         public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
         {
-            if (APPID == null || APPID == "") throw new ArgumentNullException("APPID");
-            if (APIKEY == null || APIKEY == "") throw new ArgumentNullException("APIKEY");
-            if (APISECRET == null || APISECRET == "") throw new ArgumentNullException("APISECRET");
+            ThrowIfNull(APPID , "APPID");
+            ThrowIfNull(APIKEY , "APIKEY");
+            ThrowIfNull(APISECRET, "APISECRET");
 
             this.APPID = APPID;
             this.APIKEY = APIKEY;
@@ -59,8 +59,8 @@ namespace UnityClient
 
         public void AddHeader(string name, string value)
         {
-            if (name == null || name == "") throw new ArgumentNullException("name");
-            if (value == null || value == "") throw new ArgumentNullException("APPID");
+            ThrowIfNull(name , "name");
+            ThrowIfNull(value , "value");
             
             SignedHeaders += string.Format("{0};", name);
             // TODO: value
@@ -68,7 +68,7 @@ namespace UnityClient
 
         public void AddService(string name)
         {
-            if (name == null || name == "") throw new ArgumentNullException("name");
+            ThrowIfNull(name, "name");
             svcname = name;
         }
 
@@ -76,6 +76,13 @@ namespace UnityClient
         {
             string Credentials = string.Format(CredentialsFormat, APIKEY, "YYYYMMDD", svcname);
             return string.Format(HeaderFormat, Algorithm, Credentials, SignedHeaders, Signature);
+        }
+
+
+        private void ThrowIfNull(string value, string argName)
+        {
+            if (value == null || value == string.Empty || value == "")
+                throw new ArgumentNullException(argName);
         }
     }
 }

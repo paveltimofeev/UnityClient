@@ -5,13 +5,13 @@ module.exports = function(grunt) {
       scripts: {
         files: ['**/*.cs'],
         tasks: ['shell:ps'],
-        options: {spawn: false, cwd:'C:\\Git\\Repositories\\UnityClient\\src'},
+        options: {spawn: false, cwd:'C:\\Git\\Repositories\\UnityClient\\src\\UnityClient\\'},
       },
     },
     shell: {
       ps: {
         options: {stdout: true},
-        command: 'powershell C:\\Git\\Repositories\\Gists\\CS-merger.ps1 -source C:\\Git\\Repositories\\UnityClient\\src\\ -output C:\\Git\\Repositories\\UnityClient\\unity\\Assets\\RestClient.cs'
+        command: 'powershell C:\\Git\\Repositories\\Gists\\CS-merger.ps1 -source C:\\Git\\Repositories\\UnityClient\\src\\UnityClient\\ -output C:\\Git\\Repositories\\UnityClient\\unity\\Assets\\RestBehaviour.cs'
       }
     }
   });

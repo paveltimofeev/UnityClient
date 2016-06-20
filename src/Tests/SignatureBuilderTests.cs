@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using UnityClient;
 
@@ -15,6 +16,7 @@ namespace Tests
         public void CreateSignature()
         {
             SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            builder.AddUrl(Method.GET, "");
             string sign = builder.CreateSignature();
 
             Assert.IsNotNull(sign);
@@ -137,34 +139,18 @@ namespace Tests
 
 
         [TestMethod]
-        public void NullOrEmptyUrlIsNotAllowed()
-        {
-            ExpectedException<ArgumentNullException>(() =>
-            {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-                builder.AddUrl(null);
-            });
-
-            ExpectedException<ArgumentNullException>(() =>
-            {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-                builder.AddUrl("");
-            });
-        }
-
-        [TestMethod]
         public void UrlsWithProtocolOrDomainIsNotAllowed()
         {
             ExpectedException<ArgumentException>(() =>
             {
                 SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-                builder.AddUrl("http://url");
+                builder.AddUrl(Method.GET, "http://url");
             });
 
             ExpectedException<ArgumentException>(() =>
             {
                 SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-                builder.AddUrl("url.com");
+                builder.AddUrl(Method.GET, "url.com");
             });
 
         }
@@ -175,7 +161,7 @@ namespace Tests
             ExpectedException<ArgumentException>(() =>
             {
                 SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-                builder.AddUrl("/v1/path?query?query");
+                builder.AddUrl(Method.GET, "/v1/path?query?query");
             });
         }
 
@@ -186,21 +172,12 @@ namespace Tests
             string CanonicalURI = "/v1/path";
 
             SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-            builder.AddUrl(URL);
+            builder.AddUrl(Method.GET, URL);
 
             Assert.AreEqual(builder.canonicalUri, CanonicalURI);
         }
 
-        [TestMethod]
-        public void ReadCanonicalUriWithoutSettingUrlShouldThrowException()
-        {
-            ExpectedException<ArgumentNullException>(() =>
-            {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-                string temp = builder.canonicalUri;
-            });
-        }
-
+        
         [TestMethod]
         public void AddUrlShouldCreateCanonicalQuery()
         {
@@ -208,7 +185,7 @@ namespace Tests
             string CanonicalQuery = "a=val2&b=val";
 
             SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
-            builder.AddUrl(URL);
+            builder.AddUrl(Method.GET, URL);
 
             Assert.AreEqual(builder.canonicalQuery, CanonicalQuery);
         }
@@ -221,7 +198,93 @@ namespace Tests
             builder.AddHeader("range", "2");
             builder.AddHeader("X-Date", "3");
 
-            Assert.AreEqual(builder.canonicalHeaders, "HOST: 1\nrange: 2\nX-Date: 3\n");
+            Assert.AreEqual(builder.canonicalHeaders, "HOST:1\nrange:2\nX-Date:3\n\n");
+        }
+
+
+        [TestMethod]
+        public void SignatureCreationSteps()
+        {
+            SignatureBuilder builder = new SignatureBuilder(APPID, "<APIKEY>", "<APISECRET>");
+            builder.AddHeader("host", "https://localhost");
+            builder.AddHeader("range", "");
+            builder.AddHeader("x-date", "20160501");
+            builder.AddService("scoreboard");
+            builder.AddUrl(Method.GET, "/v1/serviceName/action/parameter?arg1=1&arg3=3&arg2=2");
+            builder.AddBody("");
+
+            Assert.AreEqual("20160619/scoreboard", builder.CredentialScope, "Mistake in CredentialScope step");
+            Assert.AreEqual("host:https://localhost\nrange:\nx-date:20160501\n\n", builder.canonicalHeaders, "Mistake in canonicalHeaders step");
+            Assert.AreEqual(@"arg1=1&arg2=2&arg3=3", builder.canonicalQuery, "Mistake in canonicalQuery step");
+            Assert.AreEqual(@"/v1/servicename/action/parameter", builder.canonicalUri, "Mistake in canonicalUri step");
+            Assert.AreEqual(@"host;range;x-date", builder.signedHeaders, "Mistake in signedHeaders step");
+
+            var expPayloadHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+            var actPayloadHash = builder.payloadHash;
+            Assert.AreEqual(expPayloadHash, actPayloadHash, "Mistake in payloadHash step");
+
+            var expCanonicalRequest = "GET\n/v1/servicename/action/parameter\narg1=1&arg2=2&arg3=3\nhost:https://localhost\nrange:\nx-date:20160501\n\n\nhost;range;x-date\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+            var actCanonicalRequest = builder.canonicalRequest;            
+            Assert.AreEqual(expCanonicalRequest, actCanonicalRequest, "Mistake in canonicalRequest step");
+
+            Assert.AreEqual("1a64e2178c77dc7c94d2786462fe276d60a527edc1a751654ca6577ba885152e", builder.HashedCanonicalRequest, "Mistake in HashedCanonicalRequest step");
+
+            var expStringToSign = "AWS4-HMAC-SHA256\n\n20160619/scoreboard\n1a64e2178c77dc7c94d2786462fe276d60a527edc1a751654ca6577ba885152e";
+            var actStringToSign = builder.stringToSign;
+            Assert.AreEqual(expStringToSign, actStringToSign, "Mistake in stringToSign step");
+
+            Assert.AreEqual("UVv7IXUJW9JXucGkO1SNCSpHzIRxvljisAFLGLIa6Rg", builder.Signature, "Mistake in Header step");
+
+            var expSignatureHeader = "AWS4-HMAC-SHA256 Credentials=<APIKEY>/20160619/scoreboard SignedHeaders=host;range;x-date Signature=UVv7IXUJW9JXucGkO1SNCSpHzIRxvljisAFLGLIa6Rg";
+            var actSignatureHeader = builder.CreateSignature();
+            Assert.AreEqual(expSignatureHeader, actSignatureHeader, "Mistake in Header step");
+
+/* 
+stringToSign= PGS1
+
+YYYYMMDD/testService
+§]
+JùÈY=¢w§Ë¯k;IT¯­
+canonicalRequest= 
+/v1/path
+p1=a&p2=b
+host: 1
+range: 2
+x-date: 3
+
+host;range;x-date
+d-
+,>|º83-b:iq )þ²¡çù&,
+HashedCanonicalRequest= §]
+JùÈY=¢w§Ë¯k;IT¯­
+Signature= ?*@°x
+»ø´¤£;tç
+LãÄ
+Header= PGS1 Credentials=TEST-APIKEY/YYYYMMDD/testService SignedHeaders=HOST;range;X-Date Signature=?*@°x
+»ø´¤£;tç
+LãÄ
+
+             
+             
+*/
+
+            Debug.Print("------------------------------------------------");
+
+            Debug.Print("CredentialScope= {0}", builder.CredentialScope);
+            Debug.Print("canonicalHeaders= {0}", builder.canonicalHeaders);
+            Debug.Print("canonicalQuery= {0}", builder.canonicalQuery);
+            Debug.Print("canonicalUri= {0}", builder.canonicalUri);
+            Debug.Print("signedHeaders= {0}", builder.signedHeaders);
+            Debug.Print("payloadHash= {0}", builder.payloadHash);
+            Debug.Print("stringToSign= {0}", builder.stringToSign);
+            Debug.Print("canonicalRequest= {0}", builder.canonicalRequest);
+            Debug.Print("HashedCanonicalRequest= {0}", builder.HashedCanonicalRequest);
+            Debug.Print("Signature= {0}", builder.Signature);
+            
+            Debug.Print("Header= {0}", builder.CreateSignature());
+
+            Debug.Print("------------------------------------------------");
+
         }
 
 

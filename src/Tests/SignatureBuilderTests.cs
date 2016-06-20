@@ -203,6 +203,7 @@ namespace Tests
 
 
         [TestMethod]
+        [TestCategory("DataDriven")]
         public void SignatureCreationSteps()
         {
             SignatureBuilder builder = new SignatureBuilder(APPID, "<APIKEY>", "<APISECRET>");

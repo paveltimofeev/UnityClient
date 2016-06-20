@@ -7,25 +7,6 @@ using System.Text.RegularExpressions;
 
 namespace UnityClient
 {
-    // sign*(
-    //   Algorithm name
-    //   Date of request
-    //   YYYYMMDD/svcname
-    //   hash(
-    //         (
-    //           uri
-    //           query
-    //           headers
-    //           list_headers
-    //           hash( body )
-    //         )
-    //       )
-    // )
-    // 
-    // * with apisecret
-    //
-    // Algorithm Credentials=APIKEY/YYYYMMDD/svcname SignedHeaders=list_headers Signature=sign
-
     public class SignatureBuilder
     {
         private const string Algorithm = "AWS4-HMAC-SHA256";
@@ -44,9 +25,6 @@ namespace UnityClient
         private string list_headers;
         
         private Encoding enc = Encoding.UTF8;
-        
-        public string payloadHash { get; private set; }
-                
         
         public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
         {
@@ -146,11 +124,13 @@ namespace UnityClient
             }
         }
 
+        public string payloadHash { get; private set; }
+        
         public string canonicalRequest
         {
             get
             {
-                return string.Join("\n",
+                return string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}",
                     method, canonicalUri, canonicalQuery, canonicalHeaders, signedHeaders, payloadHash);
             }
         }
@@ -183,7 +163,7 @@ namespace UnityClient
         {
             get
             {
-                return string.Join("\n", 
+                return string.Format("{0}\n{1}\n{2}\n{3}", 
                     Algorithm, RequestDate, CredentialScope, HashedCanonicalRequest);
             }
         }
@@ -192,8 +172,9 @@ namespace UnityClient
         {
             get
             {
-                var keyByte = (new System.Text.ASCIIEncoding()).GetBytes(APISECRET);
-                var messageBytes = (new System.Text.ASCIIEncoding()).GetBytes(stringToSign);
+                ASCIIEncoding ascii = new System.Text.ASCIIEncoding();
+                var keyByte = ascii.GetBytes(APISECRET);
+                var messageBytes = ascii.GetBytes(stringToSign);
                 using (var hmac = new HMACSHA256(keyByte))
                 {
                     var hashBytes = hmac.ComputeHash(messageBytes);

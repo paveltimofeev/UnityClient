@@ -29,10 +29,10 @@ namespace UnityClient
         
         public SignatureBuilder(string CLIENTID, string APPID, string APIKEY, string APISECRET)
         {
-            ThrowIfNull(CLIENTID, "CLIENTID");
-            ThrowIfNull(APPID, "APPID");
-            ThrowIfNull(APIKEY , "APIKEY");
-            ThrowIfNull(APISECRET, "APISECRET");
+            ThrowIf.Null(CLIENTID, "CLIENTID");
+            ThrowIf.Null(APPID, "APPID");
+            ThrowIf.Null(APIKEY , "APIKEY");
+            ThrowIf.Null(APISECRET, "APISECRET");
 
             this.CLIENTID = CLIENTID;
             this.APPID = APPID;
@@ -42,8 +42,8 @@ namespace UnityClient
 
         public void AddHeader(string name, string value)
         {
-            ThrowIfNullOnly(name, "name");
-            ThrowIfNullOnly(value , "value");
+            ThrowIf.NullOnly(name, "name");
+            ThrowIf.NullOnly(value , "value");
             
             // TODO: Case-sensitive, sorted?
             list_headers += string.Format("{0};", name);
@@ -52,13 +52,13 @@ namespace UnityClient
 
         public void AddService(string name)
         {
-            ThrowIfNull(name, "name");
+            ThrowIf.Null(name, "name");
             svcname = name;
         }
 
         public void AddUrl(string method, string url)
         {
-            ThrowIfNull(method, "method");
+            ThrowIf.Null(method, "method");
 
             if (url == null || url == string.Empty)
                 url = "";
@@ -160,7 +160,6 @@ namespace UnityClient
             {
                 // TODO: CredentialScope
                 // return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
-            
                 return string.Format("{0}/{1}", "20160619", svcname);
             }
         }
@@ -213,22 +212,27 @@ namespace UnityClient
             return sb.ToString();
         }
 
-        private void ThrowIfNull(string value, string argName)
-        {
-            if (value == null || value == string.Empty || value == "")
-                throw new ArgumentNullException(argName);
-        }
-
-        private void ThrowIfNullOnly(object value, string argName)
-        {
-            if (value == null)
-                throw new ArgumentNullException(argName);
-        }
     }
 
     public static class Method
     {
         public const string GET = "GET";
         public const string POST = "POST";
+    }
+
+    public class ThrowIf
+    {
+        public static void Null(string value, string argName)
+        {
+            if (value == null || value == string.Empty || value == "")
+                throw new ArgumentNullException(argName);
+        }
+
+        public static void NullOnly(object value, string argName)
+        {
+            if (value == null)
+                throw new ArgumentNullException(argName);
+        }
+
     }
 }

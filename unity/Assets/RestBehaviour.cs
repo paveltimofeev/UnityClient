@@ -1,5 +1,6 @@
-
-/// © Pavel Timofeev 
+///
+/// © Pavel Timofeev
+/// Changed at 2016-06-21T22:16:54
 
 using rest;
 using System.Collections.Generic;
@@ -9,17 +10,28 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Text;
 using System;
+using UnityClient;
 using UnityEngine.Experimental.Networking;
 using UnityEngine.SocialPlatforms;
 using UnityEngine;
 public class RestBehaviour : MonoBehaviour
 {
     public string _baseUri;
+    public string _clientId;
     public string _appId;
     public string _apiKey;
     public string _apiSecret;
-    RestClient restClient = new RestClient();
-    HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
+    protected string serviceName = "baseService";
+    protected RestClient restClient;
+    protected HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
+    protected void Init()
+    {
+        RestClient restClient = new RestClient(_baseUri, _clientId, _appId, _apiKey, _apiSecret, serviceName);
+    }
+    void OnStart()
+    {
+        Init();
+    }
     private void RetryableGet<T>(string uri, Action<Exception, T> callback, int attempt = 0)
         where T : class
     {
@@ -27,7 +39,7 @@ public class RestBehaviour : MonoBehaviour
             Debug.LogWarning("Retry: " + attempt);
         StartCoroutine(
                 restClient.Get(
-                    _baseUri + uri,
+                    uri,
                     (Response res) =>
                     {
                         if (retryPolicy.ShouldRetry(attempt, res.StatusCode))
@@ -60,7 +72,7 @@ public class RestBehaviour : MonoBehaviour
             Debug.LogWarning("Retry: " + attempt);
         StartCoroutine(
             restClient.Post(
-                _baseUri + uri,
+                uri,
                 JsonUtility.ToJson(data, false),
                 (Response res) =>
                 {
@@ -157,6 +169,29 @@ namespace rest
     }
     public class RestClient
     {
+        private readonly string _baseUri;
+        private readonly string _clientId;
+        private readonly string _appId;
+        private readonly string _apiKey;
+        private readonly string _apiSecret;
+        private string host;
+        private string service;
+        private readonly Encoding bodyEncoding = Encoding.Default;
+        public RestClient(string host, string clientId, string appId, string apiKey, string apiSecret, string service)
+        {
+            ThrowIf.Null(host, "host");
+            ThrowIf.Null(clientId, "clientId");
+            ThrowIf.Null(appId, "appId");
+            ThrowIf.Null(apiSecret, "apiSecret");
+            ThrowIf.Null(service, "service");
+            this._baseUri = host;
+            this._clientId = clientId;
+            this._appId = appId;
+            this._apiKey = apiKey;
+            this._apiSecret = apiSecret;
+            this.host = host;
+            this.service = service;
+        }
         public IEnumerator Get(string url, Action<Response> callback, float delay = 0)
         {
             if (delay > 0)
@@ -164,7 +199,9 @@ namespace rest
                 Debug.LogWarning("Delay for " + delay + " sec");
                 yield return new WaitForSeconds(delay);
             }
-            WWW www = new WWW(url);
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Authorization", GetAuthorizationHeader(Method.GET, url, null));
+            WWW www = new WWW(host + url, bodyEncoding.GetBytes(""), headers);
             while (!www.isDone)
             {
                 yield return new WaitForEndOfFrame();
@@ -180,8 +217,9 @@ namespace rest
                 yield return new WaitForSeconds(delay);
             }
             Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Authorization", GetAuthorizationHeader(Method.POST, url, jsonBody));
             headers.Add("Content-Type", "application/json");
-            WWW www = new WWW(url, Encoding.Default.GetBytes(jsonBody), headers);
+            WWW www = new WWW(host + url, bodyEncoding.GetBytes(jsonBody), headers);
             while (!www.isDone)
             {
                 yield return new WaitForEndOfFrame();
@@ -189,18 +227,17 @@ namespace rest
             if (callback != null)
                 callback(new Response(www));
         }
-    }
-}
-public class ScoreboardService : RestBehaviour
-{
-    public string ApiEndpoint;
-    public void GetTop(Action<Exception, TopScores> callback)
-    {
-        Get<TopScores>("/score/top", callback);
-    }
-    public void PostScore(ScoreData score, Action<Exception, ScoreData> callback)
-    {
-        Post<ScoreData>("/score/", score, callback);
+        private string GetAuthorizationHeader(string method, string url, string body)
+        {
+            var signatureBuilder = new SignatureBuilder(_clientId, _appId, _apiKey, _apiSecret);
+            signatureBuilder.AddUrl(method, url);
+            signatureBuilder.AddBody(body);
+            signatureBuilder.AddService(service);
+            signatureBuilder.AddHeader("host", host);
+            signatureBuilder.AddHeader("range", "");
+            signatureBuilder.AddHeader("x-date", DateTime.UtcNow.ToString("o"));
+            return signatureBuilder.CreateSignature();
+        }
     }
 }
 [Serializable]
@@ -263,6 +300,7 @@ namespace UnityClient
     public class SignatureBuilder
     {
         private const string Algorithm = "AWS4-HMAC-SHA256";
+        private readonly string CLIENTID = string.Empty;
         private readonly string APPID = string.Empty;
         private readonly string APIKEY = string.Empty;
         private readonly string APISECRET = string.Empty;
@@ -275,30 +313,32 @@ namespace UnityClient
         private Dictionary<string, string> headers = new Dictionary<string,string>();
         private string list_headers;
         private Encoding enc = Encoding.UTF8;
-        public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
+        public SignatureBuilder(string CLIENTID, string APPID, string APIKEY, string APISECRET)
         {
-            ThrowIfNull(APPID , "APPID");
-            ThrowIfNull(APIKEY , "APIKEY");
-            ThrowIfNull(APISECRET, "APISECRET");
+            ThrowIf.Null(CLIENTID, "CLIENTID");
+            ThrowIf.Null(APPID, "APPID");
+            ThrowIf.Null(APIKEY , "APIKEY");
+            ThrowIf.Null(APISECRET, "APISECRET");
+            this.CLIENTID = CLIENTID;
             this.APPID = APPID;
             this.APIKEY = APIKEY;
             this.APISECRET = APISECRET;
         }
         public void AddHeader(string name, string value)
         {
-            ThrowIfNullOnly(name, "name");
-            ThrowIfNullOnly(value , "value");
+            ThrowIf.NullOnly(name, "name");
+            ThrowIf.NullOnly(value , "value");
             list_headers += string.Format("{0};", name);
             headers.Add(name, Regex.Replace(value.ToLowerInvariant().Trim(), @"\s+", " "));
         }
         public void AddService(string name)
         {
-            ThrowIfNull(name, "name");
+            ThrowIf.Null(name, "name");
             svcname = name;
         }
         public void AddUrl(string method, string url)
         {
-            ThrowIfNull(method, "method");
+            ThrowIf.Null(method, "method");
             if (url == null || url == string.Empty)
                 url = "";
             if (url.Contains("://"))
@@ -423,20 +463,23 @@ namespace UnityClient
             }
             return sb.ToString();
         }
-        private void ThrowIfNull(string value, string argName)
-        {
-            if (value == null || value == string.Empty || value == "")
-                throw new ArgumentNullException(argName);
-        }
-        private void ThrowIfNullOnly(object value, string argName)
-        {
-            if (value == null)
-                throw new ArgumentNullException(argName);
-        }
     }
     public static class Method
     {
         public const string GET = "GET";
         public const string POST = "POST";
+    }
+    public class ThrowIf
+    {
+        public static void Null(string value, string argName)
+        {
+            if (value == null || value == string.Empty || value == "")
+                throw new ArgumentNullException(argName);
+        }
+        public static void NullOnly(object value, string argName)
+        {
+            if (value == null)
+                throw new ArgumentNullException(argName);
+        }
     }
 }

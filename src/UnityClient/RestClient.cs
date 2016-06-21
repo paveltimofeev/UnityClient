@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Networking;
 using UnityEngine.SocialPlatforms;
 using rest;
+using UnityClient;
 
 /// <summary>
 /// Basic functionality for REST services
@@ -14,17 +15,18 @@ using rest;
 public class RestBehaviour : MonoBehaviour
 {
     public string _baseUri;
+    public string _clientId;
     public string _appId;
     public string _apiKey;
     public string _apiSecret;
 
     protected string serviceName = "baseService";
-    protected RestClient restClient = new RestClient();
+    protected RestClient restClient;
     protected HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
 
     protected void Init()
     {
-        RestClient restClient = new RestClient(_baseUri, _appId, _apiKey, _apiSecret, serviceName);
+        RestClient restClient = new RestClient(_baseUri, _clientId, _appId, _apiKey, _apiSecret, serviceName);
     }
 
     void OnStart()
@@ -195,6 +197,7 @@ namespace rest
     public class RestClient
     {
         private readonly string _baseUri;
+        private readonly string _clientId;
         private readonly string _appId;
         private readonly string _apiKey;
         private readonly string _apiSecret;
@@ -202,13 +205,21 @@ namespace rest
         private string host;
         private string service;
 
-        public RestClient(string host, string _appId, string _apiKey, string _apiSecret)
+        private readonly Encoding bodyEncoding = Encoding.Default;
+
+        public RestClient(string host, string clientId, string appId, string apiKey, string apiSecret, string service)
         {
-            // TODO: check for nulls
-            this._baseUri =_baseUri;
-            this._appId = _appId;
-            this._apiKey = _apiKey;
-            this._apiSecret = _apiSecret;
+            ThrowIf.Null(host, "host");
+            ThrowIf.Null(clientId, "clientId");
+            ThrowIf.Null(appId, "appId");
+            ThrowIf.Null(apiSecret, "apiSecret");
+            ThrowIf.Null(service, "service");
+
+            this._baseUri = host;
+            this._clientId = clientId;
+            this._appId = appId;
+            this._apiKey = apiKey;
+            this._apiSecret = apiSecret;
 
             this.host = host;
             this.service = service;
@@ -227,7 +238,7 @@ namespace rest
             headers.Add("Authorization", GetAuthorizationHeader(Method.GET, url, null));
 
             // TODO: check whether GET with headers supported or not
-            WWW www = new WWW(host + url, "", headers);
+            WWW www = new WWW(host + url, bodyEncoding.GetBytes(""), headers);
             
             while (!www.isDone)
             {
@@ -252,7 +263,7 @@ namespace rest
             headers.Add("Content-Type", "application/json");
 
 
-            WWW www = new WWW(host + url, Encoding.Default.GetBytes(jsonBody), headers);
+            WWW www = new WWW(host + url, bodyEncoding.GetBytes(jsonBody), headers);
 
             while (!www.isDone)
             {
@@ -265,14 +276,14 @@ namespace rest
 
         private string GetAuthorizationHeader(string method, string url, string body)
         {
-            var signatureBuilder = new SignatureBuilder(_appId, _apiKey, _apiSecret);
+            var signatureBuilder = new SignatureBuilder(_clientId, _appId, _apiKey, _apiSecret);
             signatureBuilder.AddUrl(method, url);
             signatureBuilder.AddBody(body);
             signatureBuilder.AddService(service);
             signatureBuilder.AddHeader("host", host);
             // TODO: should range be deleted?
             signatureBuilder.AddHeader("range", "");
-            signatureBuilder.AddHeader("x-date", [System.DateTime]::UtcNow.ToString("o"));
+            signatureBuilder.AddHeader("x-date", DateTime.UtcNow.ToString("o"));
 
             return signatureBuilder.CreateSignature();
         }

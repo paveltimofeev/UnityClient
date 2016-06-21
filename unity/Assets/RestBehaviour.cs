@@ -1,8 +1,8 @@
 ///
 /// © Pavel Timofeev
-/// Changed at 2016-06-21T22:16:54
+/// Changed at 2016-06-21T22:26:02
 
-using rest;
+using Rest;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -10,10 +10,84 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Text;
 using System;
+using UnityClient.Utils;
 using UnityClient;
 using UnityEngine.Experimental.Networking;
 using UnityEngine.SocialPlatforms;
 using UnityEngine;
+[Serializable]
+public class TopScores
+{
+    public string path = "";
+    public ScoreData[] scores;
+}
+[Serializable]
+public class ScoreData
+{
+    public string Leaderboard = "";
+    public string Player = "";
+    public long Value = 0;
+    public string[] Values;
+    public long Rank = 0;
+    public string Clan = "";
+    public string Location = "";
+    public string Platform = "";
+    public string GameSessionGUID = "";
+}
+public class Score : IScore
+{
+    ScoreboardService _rest;
+    public ScoreData StoredData { get; private set; }
+    public Score(ScoreboardService rest, string player, long value)
+    {
+        _rest = rest;
+        StoredData = new ScoreData();
+        StoredData.Player = player;
+        StoredData.Value = value;
+        StoredData.Platform = Application.platform.ToString().ToUpper();
+        StoredData.GameSessionGUID = Guid.NewGuid().ToString().ToUpper();
+    }
+    public void ReportScore(Action<bool> callback)
+    {
+        _rest.PostScore(this.StoredData,
+            (Exception ex, ScoreData score) =>
+            {
+                FromRawData(score);
+                callback(ex == null);
+            });
+    }
+    public void FromRawData(ScoreData data)
+    {
+        StoredData = data;
+        this.value = data.Value;
+        this.rank = rank;
+        this.userID = data.Player;
+    }
+    public string leaderboardID { get; set; }
+    public long value { get; set; }
+    public string formattedValue { get; private set; }
+    public int rank { get; private set; }
+    public string userID { get; private set; }
+    public DateTime date { get; private set; }
+}
+namespace UnityClient.Utils
+{
+    public class ThrowIf
+    {
+        public static void Null(string value, string argName)
+        {
+            if (value == null || value == string.Empty || value == "")
+                throw new ArgumentNullException(argName);
+        }
+        public static void NullOnly(object value, string argName)
+        {
+            if (value == null)
+                throw new ArgumentNullException(argName);
+        }
+    }
+}
+namespace Rest
+{
 public class RestBehaviour : MonoBehaviour
 {
     public string _baseUri;
@@ -109,8 +183,6 @@ public class RestBehaviour : MonoBehaviour
         RetryablePost<T>(uri, data, callback, 0);
     }
 }
-namespace rest
-{
     public class HttpRetryPolicy
     {
         System.Random random = new System.Random();
@@ -239,61 +311,11 @@ namespace rest
             return signatureBuilder.CreateSignature();
         }
     }
-}
-[Serializable]
-public class TopScores
-{
-    public string path = "";
-    public ScoreData[] scores;
-}
-[Serializable]
-public class ScoreData
-{
-    public string Leaderboard = "";
-    public string Player = "";
-    public long Value = 0;
-    public string[] Values;
-    public long Rank = 0;
-    public string Clan = "";
-    public string Location = "";
-    public string Platform = "";
-    public string GameSessionGUID = "";
-}
-public class Score : IScore
-{
-    ScoreboardService _rest;
-    public ScoreData StoredData { get; private set; }
-    public Score(ScoreboardService rest, string player, long value)
+    public static class Method
     {
-        _rest = rest;
-        StoredData = new ScoreData();
-        StoredData.Player = player;
-        StoredData.Value = value;
-        StoredData.Platform = Application.platform.ToString().ToUpper();
-        StoredData.GameSessionGUID = Guid.NewGuid().ToString().ToUpper();
+        public const string GET = "GET";
+        public const string POST = "POST";
     }
-    public void ReportScore(Action<bool> callback)
-    {
-        _rest.PostScore(this.StoredData,
-            (Exception ex, ScoreData score) =>
-            {
-                FromRawData(score);
-                callback(ex == null);
-            });
-    }
-    public void FromRawData(ScoreData data)
-    {
-        StoredData = data;
-        this.value = data.Value;
-        this.rank = rank;
-        this.userID = data.Player;
-    }
-    public string leaderboardID { get; set; }
-    public long value { get; set; }
-    public string formattedValue { get; private set; }
-    public int rank { get; private set; }
-    public string userID { get; private set; }
-    public DateTime date { get; private set; }
 }
 namespace UnityClient
 {
@@ -462,24 +484,6 @@ namespace UnityClient
                 }
             }
             return sb.ToString();
-        }
-    }
-    public static class Method
-    {
-        public const string GET = "GET";
-        public const string POST = "POST";
-    }
-    public class ThrowIf
-    {
-        public static void Null(string value, string argName)
-        {
-            if (value == null || value == string.Empty || value == "")
-                throw new ArgumentNullException(argName);
-        }
-        public static void NullOnly(object value, string argName)
-        {
-            if (value == null)
-                throw new ArgumentNullException(argName);
         }
     }
 }

@@ -6,9 +6,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Networking;
 using UnityEngine.SocialPlatforms;
-using rest;
+using Rest;
 using UnityClient;
+using UnityClient.Utils;
 
+namespace Rest
+{
 /// <summary>
 /// Basic functionality for REST services
 /// </summary>
@@ -117,10 +120,6 @@ public class RestBehaviour : MonoBehaviour
     }
 }
 
-
-// REST
-namespace rest
-{
     public class HttpRetryPolicy
     {
         System.Random random = new System.Random();
@@ -287,5 +286,11 @@ namespace rest
 
             return signatureBuilder.CreateSignature();
         }
+    }
+
+    public static class Method
+    {
+        public const string GET = "GET";
+        public const string POST = "POST";
     }
 }

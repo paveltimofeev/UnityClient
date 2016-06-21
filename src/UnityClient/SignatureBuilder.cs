@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityClient.Utils;
 
 namespace UnityClient
 {
@@ -210,28 +211,6 @@ namespace UnityClient
             }
 
             return sb.ToString();
-        }
-
-    }
-
-    public static class Method
-    {
-        public const string GET = "GET";
-        public const string POST = "POST";
-    }
-
-    public class ThrowIf
-    {
-        public static void Null(string value, string argName)
-        {
-            if (value == null || value == string.Empty || value == "")
-                throw new ArgumentNullException(argName);
-        }
-
-        public static void NullOnly(object value, string argName)
-        {
-            if (value == null)
-                throw new ArgumentNullException(argName);
         }
 
     }

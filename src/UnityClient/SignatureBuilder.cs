@@ -10,6 +10,7 @@ namespace UnityClient
     public class SignatureBuilder
     {
         private const string Algorithm = "AWS4-HMAC-SHA256";
+        private readonly string CLIENTID = string.Empty;
         private readonly string APPID = string.Empty;
         private readonly string APIKEY = string.Empty;
         private readonly string APISECRET = string.Empty;
@@ -26,12 +27,14 @@ namespace UnityClient
         
         private Encoding enc = Encoding.UTF8;
         
-        public SignatureBuilder(string APPID, string APIKEY, string APISECRET)
+        public SignatureBuilder(string CLIENTID, string APPID, string APIKEY, string APISECRET)
         {
-            ThrowIfNull(APPID , "APPID");
+            ThrowIfNull(CLIENTID, "CLIENTID");
+            ThrowIfNull(APPID, "APPID");
             ThrowIfNull(APIKEY , "APIKEY");
             ThrowIfNull(APISECRET, "APISECRET");
 
+            this.CLIENTID = CLIENTID;
             this.APPID = APPID;
             this.APIKEY = APIKEY;
             this.APISECRET = APISECRET;
@@ -155,6 +158,9 @@ namespace UnityClient
         {
             get
             {
+                // TODO: CredentialScope
+                // return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
+            
                 return string.Format("{0}/{1}", "20160619", svcname);
             }
         }

@@ -8,6 +8,7 @@ namespace Tests
     [TestClass]
     public class SignatureBuilderTest
     {
+        string CLIENTID = "TEST-CLIENTID";
         string APPID = "TEST-APPID";
         string APIKEY = "TEST-APIKEY";
         string APISECRET = "TEST-APISECRET";
@@ -15,7 +16,7 @@ namespace Tests
         [TestMethod]
         public void CreateSignature()
         {
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddUrl(Method.GET, "");
             string sign = builder.CreateSignature();
 
@@ -25,23 +26,30 @@ namespace Tests
         [TestMethod]
         public void NullOrEmptyCredsAreNotAllowed()
         {
-            ExpectedException<ArgumentNullException>(() => {
-                SignatureBuilder builder = new SignatureBuilder(null, APIKEY, APISECRET);});
+            var notNull = "STOKE";
+            var values = new string[] { notNull, string.Empty, null };
 
-            ExpectedException<ArgumentNullException>(() =>{
-                SignatureBuilder builder = new SignatureBuilder(APPID, null, APISECRET);});
+            foreach (var client in values)
+            {
+                foreach (var app in values)
+                {
+                    foreach (var api in values)
+                    {
+                        foreach (var secret in values)
+                        {
+                            if (client == notNull && app == notNull && api == notNull && secret == notNull)
+                                continue;
 
-            ExpectedException<ArgumentNullException>(() =>{
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, null);});
+                            ExpectedException<ArgumentNullException>(() =>
+                            {
+                                Debug.Print("{0}, {1}, {2}, {3}", client, app, api, secret);
+                                SignatureBuilder builder = new SignatureBuilder(client, app, api, secret);
+                            });
 
-            ExpectedException<ArgumentNullException>(() =>{
-                SignatureBuilder builder = new SignatureBuilder("", APIKEY, APISECRET);});
-
-            ExpectedException<ArgumentNullException>(() =>{
-                SignatureBuilder builder = new SignatureBuilder(APPID, "", APISECRET);});
-
-            ExpectedException<ArgumentNullException>(() =>{
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, "");});
+                        }
+                    }
+                }
+            }
         }
 
         [TestMethod]
@@ -50,7 +58,7 @@ namespace Tests
             string HEADER = "X-DATA";
             string HEADERVALUE = "VALUE";
 
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddHeader(HEADER, HEADERVALUE);
             string sign = builder.CreateSignature();
 
@@ -64,7 +72,7 @@ namespace Tests
             string HEADER2 = "X-DEBUG";
             string HEADERVALUE = "VALUE";
 
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddHeader(HEADER1, HEADERVALUE);
             builder.AddHeader(HEADER2, HEADERVALUE);
 
@@ -79,19 +87,19 @@ namespace Tests
 
             ExpectedException<ArgumentNullException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddHeader(null, HEADERVALUE);
             });
 
             ExpectedException<ArgumentNullException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddHeader(HEADER, null);
             });
 
             ExpectedException<ArgumentNullException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddHeader(null, null);
             });
         }
@@ -102,7 +110,7 @@ namespace Tests
         {
             string SERVICENAME = "SERVICE";
 
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddService(SERVICENAME);
             string sign = builder.CreateSignature();
 
@@ -114,7 +122,7 @@ namespace Tests
         {
             string SERVICENAME = "SERVICE";
 
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddService(SERVICENAME);
             string sign = builder.CreateSignature();
 
@@ -126,13 +134,13 @@ namespace Tests
         {
             ExpectedException<ArgumentNullException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddService(null);
             });
 
             ExpectedException<ArgumentNullException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddService("");
             });
         }
@@ -143,13 +151,13 @@ namespace Tests
         {
             ExpectedException<ArgumentException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddUrl(Method.GET, "http://url");
             });
 
             ExpectedException<ArgumentException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddUrl(Method.GET, "url.com");
             });
 
@@ -160,7 +168,7 @@ namespace Tests
         {
             ExpectedException<ArgumentException>(() =>
             {
-                SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+                SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
                 builder.AddUrl(Method.GET, "/v1/path?query?query");
             });
         }
@@ -171,7 +179,7 @@ namespace Tests
             string URL = " /V1/Path  ?query=val&param2=val2";
             string CanonicalURI = "/v1/path";
 
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddUrl(Method.GET, URL);
 
             Assert.AreEqual(builder.canonicalUri, CanonicalURI);
@@ -184,7 +192,7 @@ namespace Tests
             string URL = " /V1/Path  ?b=val&a=val2";
             string CanonicalQuery = "a=val2&b=val";
 
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddUrl(Method.GET, URL);
 
             Assert.AreEqual(builder.canonicalQuery, CanonicalQuery);
@@ -193,7 +201,7 @@ namespace Tests
         [TestMethod]
         public void AddHeaderShouldCreateCanonicalHeaders()
         {
-            SignatureBuilder builder = new SignatureBuilder(APPID, APIKEY, APISECRET);
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
             builder.AddHeader("HOST", "1");
             builder.AddHeader("range", "2");
             builder.AddHeader("X-Date", "3");
@@ -206,7 +214,7 @@ namespace Tests
         [TestCategory("DataDriven")]
         public void SignatureCreationSteps()
         {
-            SignatureBuilder builder = new SignatureBuilder(APPID, "<APIKEY>", "<APISECRET>");
+            SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, "<APIKEY>", "<APISECRET>");
             builder.AddHeader("host", "https://localhost");
             builder.AddHeader("range", "");
             builder.AddHeader("x-date", "20160501");
@@ -239,53 +247,6 @@ namespace Tests
             var expSignatureHeader = "AWS4-HMAC-SHA256 Credentials=<APIKEY>/20160619/scoreboard SignedHeaders=host;range;x-date Signature=UVv7IXUJW9JXucGkO1SNCSpHzIRxvljisAFLGLIa6Rg";
             var actSignatureHeader = builder.CreateSignature();
             Assert.AreEqual(expSignatureHeader, actSignatureHeader, "Mistake in Header step");
-
-/* 
-stringToSign= PGS1
-
-YYYYMMDD/testService
-§]
-JùÈY=¢w§Ë¯k;IT¯­
-canonicalRequest= 
-/v1/path
-p1=a&p2=b
-host: 1
-range: 2
-x-date: 3
-
-host;range;x-date
-d-
-,>|º83-b:iq )þ²¡çù&,
-HashedCanonicalRequest= §]
-JùÈY=¢w§Ë¯k;IT¯­
-Signature= ?*@°x
-»ø´¤£;tç
-LãÄ
-Header= PGS1 Credentials=TEST-APIKEY/YYYYMMDD/testService SignedHeaders=HOST;range;X-Date Signature=?*@°x
-»ø´¤£;tç
-LãÄ
-
-             
-             
-*/
-
-            Debug.Print("------------------------------------------------");
-
-            Debug.Print("CredentialScope= {0}", builder.CredentialScope);
-            Debug.Print("canonicalHeaders= {0}", builder.canonicalHeaders);
-            Debug.Print("canonicalQuery= {0}", builder.canonicalQuery);
-            Debug.Print("canonicalUri= {0}", builder.canonicalUri);
-            Debug.Print("signedHeaders= {0}", builder.signedHeaders);
-            Debug.Print("payloadHash= {0}", builder.payloadHash);
-            Debug.Print("stringToSign= {0}", builder.stringToSign);
-            Debug.Print("canonicalRequest= {0}", builder.canonicalRequest);
-            Debug.Print("HashedCanonicalRequest= {0}", builder.HashedCanonicalRequest);
-            Debug.Print("Signature= {0}", builder.Signature);
-            
-            Debug.Print("Header= {0}", builder.CreateSignature());
-
-            Debug.Print("------------------------------------------------");
-
         }
 
 

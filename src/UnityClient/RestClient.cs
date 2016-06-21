@@ -18,8 +18,19 @@ public class RestBehaviour : MonoBehaviour
     public string _apiKey;
     public string _apiSecret;
 
-    RestClient restClient = new RestClient();
-    HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
+    protected string serviceName = "baseService";
+    protected RestClient restClient = new RestClient();
+    protected HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
+
+    protected void Init()
+    {
+        RestClient restClient = new RestClient(_baseUri, _appId, _apiKey, _apiSecret, serviceName);
+    }
+
+    void OnStart()
+    {
+        Init();
+    }
 
     private void RetryableGet<T>(string uri, Action<Exception, T> callback, int attempt = 0)
         where T : class
@@ -29,7 +40,7 @@ public class RestBehaviour : MonoBehaviour
 
         StartCoroutine(
                 restClient.Get(
-                    _baseUri + uri,
+                    uri,
                     (Response res) =>
                     {
                         if (retryPolicy.ShouldRetry(attempt, res.StatusCode))
@@ -64,7 +75,7 @@ public class RestBehaviour : MonoBehaviour
 
         StartCoroutine(
             restClient.Post(
-                _baseUri + uri,
+                uri,
                 JsonUtility.ToJson(data, false),
                 (Response res) =>
                 {
@@ -183,6 +194,26 @@ namespace rest
 
     public class RestClient
     {
+        private readonly string _baseUri;
+        private readonly string _appId;
+        private readonly string _apiKey;
+        private readonly string _apiSecret;
+
+        private string host;
+        private string service;
+
+        public RestClient(string host, string _appId, string _apiKey, string _apiSecret)
+        {
+            // TODO: check for nulls
+            this._baseUri =_baseUri;
+            this._appId = _appId;
+            this._apiKey = _apiKey;
+            this._apiSecret = _apiSecret;
+
+            this.host = host;
+            this.service = service;
+        }
+
         public IEnumerator Get(string url, Action<Response> callback, float delay = 0)
         {
             if (delay > 0)
@@ -191,7 +222,12 @@ namespace rest
                 yield return new WaitForSeconds(delay);
             }
 
-            WWW www = new WWW(url);
+
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Authorization", GetAuthorizationHeader(Method.GET, url, null));
+
+            // TODO: check whether GET with headers supported or not
+            WWW www = new WWW(host + url, "", headers);
             
             while (!www.isDone)
             {
@@ -210,10 +246,13 @@ namespace rest
                 yield return new WaitForSeconds(delay);
             }
 
+
             Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Authorization", GetAuthorizationHeader(Method.POST, url, jsonBody));
             headers.Add("Content-Type", "application/json");
 
-            WWW www = new WWW(url, Encoding.Default.GetBytes(jsonBody), headers);
+
+            WWW www = new WWW(host + url, Encoding.Default.GetBytes(jsonBody), headers);
 
             while (!www.isDone)
             {
@@ -222,6 +261,20 @@ namespace rest
 
             if (callback != null)
                 callback(new Response(www));
+        }
+
+        private string GetAuthorizationHeader(string method, string url, string body)
+        {
+            var signatureBuilder = new SignatureBuilder(_appId, _apiKey, _apiSecret);
+            signatureBuilder.AddUrl(method, url);
+            signatureBuilder.AddBody(body);
+            signatureBuilder.AddService(service);
+            signatureBuilder.AddHeader("host", host);
+            // TODO: should range be deleted?
+            signatureBuilder.AddHeader("range", "");
+            signatureBuilder.AddHeader("x-date", [System.DateTime]::UtcNow.ToString("o"));
+
+            return signatureBuilder.CreateSignature();
         }
     }
 }

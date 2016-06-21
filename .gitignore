@@ -39,3 +39,4 @@ src/UnityClient/packages/
 src/UnityClient/TestResults/
 src/Tests/bin/
 src/Tests/obj/
+*.log

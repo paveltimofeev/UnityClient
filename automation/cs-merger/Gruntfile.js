@@ -11,7 +11,7 @@ module.exports = function(grunt) {
     shell: {
       ps: {
         options: {stdout: true},
-        command: 'powershell C:\\Git\\Repositories\\Gists\\CS-merger.ps1 -source C:\\Git\\Repositories\\UnityClient\\src\\UnityClient\\ -output C:\\Git\\Repositories\\UnityClient\\unity\\Assets\\RestBehaviour.cs -copyAsIs ScoreboardService >> C:\\Git\\Repositories\\Gists\\cs-merger.log'
+        command: 'powershell C:\\Git\\Repositories\\Gists\\CS-merger.ps1 -source C:\\Git\\Repositories\\UnityClient\\src\\UnityClient\\ -output C:\\Git\\Repositories\\UnityClient\\unity\\Assets\\RestBehaviour.cs -copyAsIs ScoreboardService >> C:\\Git\\Repositories\\UnityClient\\automation\\cs-merger\\cs-merger.log'
       }
     }
   });

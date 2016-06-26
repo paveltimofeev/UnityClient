@@ -10,7 +10,6 @@ namespace ScoreboardService.Tests
     public class ResponseTests
     {
         [TestMethod]
-        [Microsoft.VisualStudio.TestTools.UnitTesting.Ignore]
         public void ResponseCodesTest()
         {
             Moq.MockRepository repo = new Moq.MockRepository(Moq.MockBehavior.Strict);

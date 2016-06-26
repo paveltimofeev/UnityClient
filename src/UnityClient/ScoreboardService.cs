@@ -10,7 +10,7 @@ using UnityEngine.SocialPlatforms;
 /// </summary>
 public class ScoreboardService : RestBehaviour
 {
-    void OnStart()
+    public override void Start()
     {
         base.serviceName = "scoreboard";
         base.Init();
@@ -22,7 +22,7 @@ public class ScoreboardService : RestBehaviour
     /// <param name="callback">Callback method with Exception and TopScores args</param>
     public void GetTop(Action<Exception, TopScores> callback)
     {
-        Get<TopScores>("/score/top", callback);
+        Get<TopScores>("/v1/scoreboard/score/10", callback);
     }
 
     /// <summary>
@@ -32,6 +32,6 @@ public class ScoreboardService : RestBehaviour
     /// <param name="callback">Callback method with Exception and ScoreData args</param>
     public void PostScore(ScoreData score, Action<Exception, ScoreData> callback)
     {
-        Post<ScoreData>("/score/", score, callback);
+        Post<ScoreData>("/v1/scoreboard/score", score, callback);
     }
 }

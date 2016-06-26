@@ -160,8 +160,8 @@ namespace UnityClient
             get
             {
                 // TODO: CredentialScope
-                // return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
-                return string.Format("{0}/{1}", "20160619", svcname);
+                return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
+                //return string.Format("{0}/{1}", "20160619", svcname);
             }
         }
 

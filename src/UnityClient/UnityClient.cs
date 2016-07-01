@@ -57,7 +57,8 @@ namespace Rest
 
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Authorization", GetAuthorizationHeader(Method.GET, path, null));
-            
+            headers.Add("x-debug", "true");
+
             // TODO: check whether GET with headers supported or not
             WWW www = request(host + path, null, headers);
             
@@ -81,6 +82,7 @@ namespace Rest
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Authorization", GetAuthorizationHeader(Method.POST, path, jsonBody));
             headers.Add("Content-Type", "application/json");
+            headers.Add("x-debug", "true");
 
             WWW www = request(host + path, bodyEncoding.GetBytes(jsonBody), headers);
             
@@ -88,7 +90,7 @@ namespace Rest
             {
                 yield return new WaitForEndOfFrame();
             }
-
+            
             if (callback != null)
                 callback(new Response(www));
         }
@@ -99,12 +101,12 @@ namespace Rest
             signatureBuilder.AddUrl(method, url);
             signatureBuilder.AddBody(body);
             signatureBuilder.AddService(service);
-            signatureBuilder.AddHeader("host", host);
-            // TODO: should range be deleted?
-            signatureBuilder.AddHeader("range", "");
-            signatureBuilder.AddHeader("x-date", DateTime.UtcNow.ToString("o"));
-            // Debug mode
-            signatureBuilder.AddHeader("x-debug", "true");
+            signatureBuilder.AddHeader("host", host.Replace("https://", "").Replace("http://", ""));
+            //signatureBuilder.AddHeader("range", "");
+            //signatureBuilder.AddHeader("x-date", DateTime.UtcNow.ToString("o"));
+
+            signatureBuilder.DebugInfo();
+            
             return signatureBuilder.CreateSignature();
         }
     }

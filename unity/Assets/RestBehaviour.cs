@@ -25,7 +25,7 @@ namespace Rest
 
         protected string serviceName = "baseService";
         protected RestClient restClient;
-        protected HttpRetryPolicy retryPolicy = new HttpRetryPolicy(3);
+        protected HttpRetryPolicy retryPolicy = new HttpRetryPolicy(1);
 
         public virtual void Start()
         {

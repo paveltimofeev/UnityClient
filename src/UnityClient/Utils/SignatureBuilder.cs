@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityClient.Utils;
+using UnityEngine;
 
 namespace UnityClient
 {
@@ -160,8 +161,8 @@ namespace UnityClient
             get
             {
                 // TODO: CredentialScope
-                return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
-                //return string.Format("{0}/{1}", "20160619", svcname);
+                //return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
+                return string.Format("{0}/{1}", "20160619", svcname);
             }
         }
 
@@ -184,18 +185,46 @@ namespace UnityClient
                 using (var hmac = new HMACSHA256(keyByte))
                 {
                     var hashBytes = hmac.ComputeHash(messageBytes);
-                    return Convert.ToBase64String(hashBytes).TrimEnd('='); // TODO: trim is not needed
+                    return Convert.ToBase64String(hashBytes);//.TrimEnd('='); // TODO: trim is not needed
                 }
             }
         }
 
+        public string Credentials
+        {
+            get
+            {
+                return string.Format(CredentialsFormat, APIKEY, "20160619", svcname);
+            }
+        }
 
         public string CreateSignature()
         {
-            string Credentials = string.Format(CredentialsFormat, APIKEY, "20160619", svcname);
             return string.Format(HeaderFormat, Algorithm, Credentials, signedHeaders, Signature);
         }
 
+        public void DebugInfo()
+        {
+            StringBuilder sb = new StringBuilder();
+            
+            sb.AppendLine("--------------------------");
+            sb.AppendFormat("  canonicalUri          = {0}\r\n" , canonicalUri);
+            sb.AppendFormat("  canonicalQuery        = {0}\r\n" , canonicalQuery);
+            sb.AppendFormat("  canonicalHeaders      = {0}\r\n" , canonicalHeaders);
+            sb.AppendFormat("  payloadHash           = {0}\r\n" , payloadHash);
+            sb.AppendFormat("  canonicalRequest      = {0}\r\n" , canonicalRequest);
+            sb.AppendFormat("  HashedCanonicalRequest= {0}\r\n" , HashedCanonicalRequest);
+            sb.AppendFormat("  Algorithm             = {0}\r\n" , Algorithm);
+            sb.AppendFormat("  RequestDate           = {0}\r\n" , RequestDate);
+            sb.AppendFormat("  CredentialScope       = {0}\r\n" , CredentialScope);
+            sb.AppendFormat("  Credentials           = {0}\r\n" , Credentials);
+            sb.AppendFormat("  signedHeaders         = {0}\r\n" , signedHeaders);
+            sb.AppendFormat("  stringToSign          = {0}\r\n" , stringToSign);
+            sb.AppendFormat("  Signature             = {0}\r\n" , Signature);
+            sb.AppendLine("--------------------------");
+            
+            Debug.Log(sb.ToString());
+        }
 
         private string GetHash(string data)
         {

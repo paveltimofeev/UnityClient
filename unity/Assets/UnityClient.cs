@@ -1,6 +1,6 @@
 ///
 /// © Pavel Timofeev
-/// Changed at 2016-06-26T13:31:49
+/// Changed at 2016-06-30T20:20:48
 
 using Rest;
 using System.Collections.Generic;
@@ -195,7 +195,7 @@ namespace UnityClient
         {
             get
             {
-                return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
+                return string.Format("{0}/{1}", "20160619", svcname);
             }
         }
         public string stringToSign
@@ -216,14 +216,40 @@ namespace UnityClient
                 using (var hmac = new HMACSHA256(keyByte))
                 {
                     var hashBytes = hmac.ComputeHash(messageBytes);
-                    return Convert.ToBase64String(hashBytes).TrimEnd('='); // TODO: trim is not needed
+                    return Convert.ToBase64String(hashBytes);//.TrimEnd('='); // TODO: trim is not needed
                 }
+            }
+        }
+        public string Credentials
+        {
+            get
+            {
+                return string.Format(CredentialsFormat, APIKEY, "20160619", svcname);
             }
         }
         public string CreateSignature()
         {
-            string Credentials = string.Format(CredentialsFormat, APIKEY, "20160619", svcname);
             return string.Format(HeaderFormat, Algorithm, Credentials, signedHeaders, Signature);
+        }
+        public void DebugInfo()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("--------------------------");
+            sb.AppendFormat("  canonicalUri          = {0}\r\n" , canonicalUri);
+            sb.AppendFormat("  canonicalQuery        = {0}\r\n" , canonicalQuery);
+            sb.AppendFormat("  canonicalHeaders      = {0}\r\n" , canonicalHeaders);
+            sb.AppendFormat("  payloadHash           = {0}\r\n" , payloadHash);
+            sb.AppendFormat("  canonicalRequest      = {0}\r\n" , canonicalRequest);
+            sb.AppendFormat("  HashedCanonicalRequest= {0}\r\n" , HashedCanonicalRequest);
+            sb.AppendFormat("  Algorithm             = {0}\r\n" , Algorithm);
+            sb.AppendFormat("  RequestDate           = {0}\r\n" , RequestDate);
+            sb.AppendFormat("  CredentialScope       = {0}\r\n" , CredentialScope);
+            sb.AppendFormat("  Credentials           = {0}\r\n" , Credentials);
+            sb.AppendFormat("  signedHeaders         = {0}\r\n" , signedHeaders);
+            sb.AppendFormat("  stringToSign          = {0}\r\n" , stringToSign);
+            sb.AppendFormat("  Signature             = {0}\r\n" , Signature);
+            sb.AppendLine("--------------------------");
+            Debug.Log(sb.ToString());
         }
         private string GetHash(string data)
         {
@@ -258,7 +284,7 @@ namespace UnityClient.Utils
 }
 namespace Rest
 {
-    public class RestClient
+    public class RestClient : IRestClient
     {
         private readonly string _clientId;
         private readonly string _appId;
@@ -281,11 +307,13 @@ namespace Rest
             this.host = host;
             this.service = service;
         }
+        
         public WWW request(string uri, byte[] body, Dictionary<string, string> headers)
         {
             Debug.Log("request: " + uri);
             return new WWW(uri, body, headers);
         }
+
         public IEnumerator Get(string path, Action<Response> callback, float delay = 0)
         {
             if (delay > 0)
@@ -295,6 +323,7 @@ namespace Rest
             }
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Authorization", GetAuthorizationHeader(Method.GET, path, null));
+            headers.Add("x-debug", "true");
             WWW www = request(host + path, null, headers);
             while (!www.isDone)
             {
@@ -313,6 +342,7 @@ namespace Rest
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Authorization", GetAuthorizationHeader(Method.POST, path, jsonBody));
             headers.Add("Content-Type", "application/json");
+            headers.Add("x-debug", "true");
             WWW www = request(host + path, bodyEncoding.GetBytes(jsonBody), headers);
             while (!www.isDone)
             {
@@ -327,10 +357,8 @@ namespace Rest
             signatureBuilder.AddUrl(method, url);
             signatureBuilder.AddBody(body);
             signatureBuilder.AddService(service);
-            signatureBuilder.AddHeader("host", host);
-            signatureBuilder.AddHeader("range", "");
-            signatureBuilder.AddHeader("x-date", DateTime.UtcNow.ToString("o"));
-            signatureBuilder.AddHeader("x-debug", "true");
+            signatureBuilder.AddHeader("host", host.Replace("https://", "").Replace("http://", ""));
+            signatureBuilder.DebugInfo();
             return signatureBuilder.CreateSignature();
         }
     }

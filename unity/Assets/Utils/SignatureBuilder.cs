@@ -162,7 +162,7 @@ namespace UnityClient
             {
                 // TODO: CredentialScope
                 //return string.Format("{0}/{1}/{2}/{3}/{4}", CLIENTID, APPID, APIKEY, APISECRET, svcname);
-                return string.Format("{0}/{1}", "20160619", svcname);
+                return string.Format("{0}/{1}", "_", svcname);
             }
         }
 
@@ -185,7 +185,7 @@ namespace UnityClient
                 using (var hmac = new HMACSHA256(keyByte))
                 {
                     var hashBytes = hmac.ComputeHash(messageBytes);
-                    return Convert.ToBase64String(hashBytes);//.TrimEnd('='); // TODO: trim is not needed
+                    return Convert.ToBase64String(hashBytes);
                 }
             }
         }
@@ -194,7 +194,7 @@ namespace UnityClient
         {
             get
             {
-                return string.Format(CredentialsFormat, APIKEY, "20160619", svcname);
+                return string.Format(CredentialsFormat, APIKEY, "_", svcname);
             }
         }
 

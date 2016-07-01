@@ -6,7 +6,7 @@ using Rest;
 
 namespace SmallTests
 {
-    public class ScoreboardTests
+    public class ScoreboardServiceTests
     {
         [Test]
         [Category("Small")]

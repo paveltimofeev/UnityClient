@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Rest;
 using UnityClient;
 
-namespace Tests
+namespace SmallTests
 {
-    [TestClass]
     public class SignatureBuilderTest
     {
         string CLIENTID = "TEST-CLIENTID";
@@ -14,7 +13,7 @@ namespace Tests
         string APIKEY = "TEST-APIKEY";
         string APISECRET = "TEST-APISECRET";
             
-        [TestMethod]
+        [Test]
         public void CreateSignature()
         {
             SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
@@ -24,7 +23,7 @@ namespace Tests
             Assert.IsNotNull(sign);
         }
 
-        [TestMethod]
+        [Test]
         public void NullOrEmptyCredsAreNotAllowed()
         {
             var notNull = "STOKE";
@@ -53,7 +52,7 @@ namespace Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void SignatureShouldContainsAddedHeaders()
         {
             string HEADER = "X-DATA";
@@ -66,7 +65,7 @@ namespace Tests
             Assert.IsTrue(sign.Contains(HEADER));
         }
 
-        [TestMethod]
+        [Test]
         public void AddedHeaderNamesShouldBeJoinedToSignedHeadersWithoutTailingSemicolon()
         {
             string HEADER1 = "X-DATA";
@@ -80,7 +79,7 @@ namespace Tests
             Assert.AreEqual(builder.signedHeaders, HEADER1 + ";" + HEADER2);
         }
 
-        [TestMethod]
+        [Test]
         public void NullOrEmptyHeadersAreNotAllowed()
         {
             string HEADER = "X-DATA";
@@ -106,7 +105,7 @@ namespace Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void SignatureShouldContainsAddedServiceWithSlashPrefix()
         {
             string SERVICENAME = "SERVICE";
@@ -118,7 +117,7 @@ namespace Tests
             Assert.IsTrue(sign.Contains("/"+SERVICENAME));
         }
 
-        [TestMethod]
+        [Test]
         public void SignatureShouldContainsApikeyWithSlashPostfix()
         {
             string SERVICENAME = "SERVICE";
@@ -130,7 +129,7 @@ namespace Tests
             Assert.IsTrue(sign.Contains(APIKEY + "/"));
         }
 
-        [TestMethod]
+        [Test]
         public void NullOrEmptyServiceIsNotAllowed()
         {
             ExpectedException<ArgumentNullException>(() =>
@@ -147,7 +146,7 @@ namespace Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void UrlsWithProtocolOrDomainIsNotAllowed()
         {
             ExpectedException<ArgumentException>(() =>
@@ -164,7 +163,7 @@ namespace Tests
 
         }
 
-        [TestMethod]
+        [Test]
         public void UrlsCannotContainsMoreThenOneQuery()
         {
             ExpectedException<ArgumentException>(() =>
@@ -174,7 +173,7 @@ namespace Tests
             });
         }
 
-        [TestMethod]
+        [Test]
         public void AddUrlShouldCreateCanonicalUri()
         {
             string URL = " /V1/Path  ?query=val&param2=val2";
@@ -187,7 +186,7 @@ namespace Tests
         }
 
         
-        [TestMethod]
+        [Test]
         public void AddUrlShouldCreateCanonicalQuery()
         {
             string URL = " /V1/Path  ?b=val&a=val2";
@@ -199,7 +198,7 @@ namespace Tests
             Assert.AreEqual(builder.canonicalQuery, CanonicalQuery);
         }
 
-        [TestMethod]
+        [Test]
         public void AddHeaderShouldCreateCanonicalHeaders()
         {
             SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, APIKEY, APISECRET);
@@ -211,8 +210,8 @@ namespace Tests
         }
 
 
-        [TestMethod]
-        [TestCategory("DataDriven")]
+        [Test]
+        [Ignore]
         public void SignatureCreationSteps()
         {
             SignatureBuilder builder = new SignatureBuilder(CLIENTID, APPID, "<APIKEY>", "<APISECRET>");

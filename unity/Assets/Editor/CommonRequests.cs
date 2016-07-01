@@ -32,10 +32,9 @@ namespace BigTests
         [Test]
         [Category("BigTests")]
         [MaxTime(10000)]
-        public void RestClient_GetShouldReturn_WrongSignature()
+        public void RestClient_IfKeyIsNotCorrect_GetShouldReturn_Forbidden()
         {
-            RestClient client = new RestClient(
-                DEV.BASEURI, DEV.CLIENTID, DEV.APPID, DEV.APIKEY, DEV.APISECRET, DEV.SERVICE);
+            RestClient client = new RestClient(DEV.BASEURI, "-", "-", "-", "-", DEV.SERVICE);
 
             Response response = null;
 
@@ -47,14 +46,14 @@ namespace BigTests
 
             while (coroutine.MoveNext()) { ;}
 
-            Assert.AreEqual(401, response.StatusCode);
-            Assert.IsTrue(response.www.error.ToLowerInvariant().Contains("401 unauthorized"), response.www.error);
-            Assert.IsTrue(response.www.text.ToLowerInvariant().Contains("wrong signature"), response.www.text);
+            Assert.AreEqual(403, response.StatusCode);
+            Assert.AreEqual("403 Forbidden", response.www.error.Trim( new char[]{'\r','\n'} ));
         }
 
         [Test]
         [Category("BigTests")]
         [MaxTime(10000)]
+        [Ignore]
         public void RestClient_PostShouldReturn_WrongSignature()
         {
             RestClient client = new RestClient(
@@ -68,16 +67,13 @@ namespace BigTests
 
             while (coroutine.MoveNext()) { ;}
 
-            Assert.AreEqual(401, response.StatusCode);
+            Assert.AreEqual(400, response.StatusCode);
             Assert.IsTrue(response.www.error.ToLowerInvariant().Contains("401 unauthorized"), response.www.error);
             Assert.IsTrue(response.www.text.ToLowerInvariant().Contains("wrong signature"), response.www.text);
         }
 
-        [Test]
-        [Category("BigTests")]
-        [MaxTime(10000)]
-        [Ignore]
-        public void RestClient_GetShouldReturn_200()
+
+        Response RequestCommonGet()
         {
             RestClient client = new RestClient(
                 DEV.BASEURI, DEV.CLIENTID, DEV.APPID, DEV.APIKEY, DEV.APISECRET, DEV.SERVICE);
@@ -92,8 +88,35 @@ namespace BigTests
 
             while (coroutine.MoveNext()) { ;}
 
+            return response;
+        }
+
+        [Test]
+        [Category("BigTests")]
+        [MaxTime(10000)]
+        public void RestClient_GetShouldReturn_200()
+        {
+            var response = RequestCommonGet();
             Assert.AreEqual(200, response.StatusCode);
-            Assert.AreEqual("", response.www.error);
+        }
+
+
+        [Test]
+        [Category("BigTests")]
+        [MaxTime(10000)]
+        public void RestClient_GetShouldNotReturn_Error()
+        {
+            var response = RequestCommonGet();
+            Assert.AreEqual(null, response.www.error);
+        }
+
+        [Test]
+        [Category("BigTests")]
+        [MaxTime(10000)]
+        public void RestClient_GetShouldReturn_ValidData()
+        {
+            var response = RequestCommonGet();
+            Assert.AreEqual("[]", response.www.text);
         }
 
     }

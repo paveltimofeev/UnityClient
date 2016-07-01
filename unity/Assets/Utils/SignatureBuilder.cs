@@ -185,7 +185,8 @@ namespace UnityClient
                 using (var hmac = new HMACSHA256(keyByte))
                 {
                     var hashBytes = hmac.ComputeHash(messageBytes);
-                    return Convert.ToBase64String(hashBytes);
+                    // TODO: figure out
+                    return Convert.ToBase64String(hashBytes).Replace('+', '-').Replace('/', '_');
                 }
             }
         }
